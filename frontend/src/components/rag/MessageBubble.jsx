@@ -35,6 +35,12 @@ export function MessageBubble({ type, content, sources = [], query = "" }) {
   const [isCopied, setIsCopied] = useState(false);
   const { showToast } = useToast();
 
+  // Safety check for content
+  if (!content) {
+    console.warn("MessageBubble received empty content");
+    return null;
+  }
+
   // Clean the content from any Markdown formatting
   const cleanContent = stripMarkdown(content);
 

@@ -2,26 +2,46 @@ import api from "./api";
 
 export const ragService = {
   async query(queryText, topK = 5, sessionId = null, selectedDocuments = []) {
-    let url = '/rag/query';
-    const params = new URLSearchParams();
-    
-    if (sessionId) {
-      params.append('session_id', sessionId);
+    try {
+      let url = '/rag/query';
+      const params = new URLSearchParams();
+      
+      if (sessionId) {
+        params.append('session_id', sessionId);
+      }
+      
+      if (selectedDocuments && selectedDocuments.length > 0) {
+        selectedDocuments.forEach(doc => params.append('documents', doc));
+      }
+      
+      if (params.toString()) {
+        url += '?' + params.toString();
+      }
+      
+      console.log('RAG Query:', {
+        url,
+        body: { query: queryText, top_k: topK },
+        params: params.toString()
+      });
+      
+      const response = await api.post(url, {
+        query: queryText,
+        top_k: topK,
+      });
+      
+      console.log('RAG Response:', response);
+      
+      // Validate response
+      if (!response || !response.data) {
+        throw new Error('Invalid response from server');
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error in ragService.query:', error);
+      console.error('Error response:', error.response);
+      throw error;
     }
-    
-    if (selectedDocuments.length > 0) {
-      selectedDocuments.forEach(doc => params.append('documents', doc));
-    }
-    
-    if (params.toString()) {
-      url += '?' + params.toString();
-    }
-    
-    const response = await api.post(url, {
-      query: queryText,
-      top_k: topK,
-    });
-    return response.data;
   },
 
   async indexDocument(document) {

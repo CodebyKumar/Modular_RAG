@@ -201,8 +201,11 @@ class PineconeService:
                     continue
                 
                 # Filter by documents if provided
-                if documents and metadata.get('source_filename') not in documents:
-                    continue
+                if documents and len(documents) > 0:
+                    source_filename = metadata.get('source_filename')
+                    if source_filename not in documents:
+                        logger.debug(f"Filtering out chunk from {source_filename}, not in {documents}")
+                        continue
                 
                 # Convert L2 distance to a similarity score (0 to 1). Closer to 1 is more similar.
                 score = 1.0 / (1.0 + distances[0][i])

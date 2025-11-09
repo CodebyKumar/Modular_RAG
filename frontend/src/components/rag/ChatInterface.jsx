@@ -37,6 +37,21 @@ export function ChatInterface({ session, onSessionUpdate, selectedDocuments = []
       return;
     }
 
+    // Check if documents are selected
+    if (!selectedDocuments || selectedDocuments.length === 0) {
+      showToast({
+        type: "warning",
+        message: "Please select at least one document from the sidebar to chat with",
+      });
+      return;
+    }
+
+    console.log("Sending message:", {
+      query,
+      sessionId: session.session_id,
+      selectedDocuments
+    });
+
     const userMessage = {
       role: "user",
       content: query,
@@ -48,11 +63,18 @@ export function ChatInterface({ session, onSessionUpdate, selectedDocuments = []
 
     try {
       const response = await ragService.query(query, 5, session.session_id, selectedDocuments);
+      
+      console.log("Received response:", response);
+
+      // Validate response
+      if (!response || !response.answer) {
+        throw new Error("Invalid response from server");
+      }
 
       const assistantMessage = {
         role: "assistant",
         content: response.answer,
-        sources: response.sources,
+        sources: response.sources || [],
         query: query, // Store the original query with the response
         timestamp: new Date().toISOString(),
       };
@@ -60,12 +82,25 @@ export function ChatInterface({ session, onSessionUpdate, selectedDocuments = []
       setMessages((prev) => [...prev, assistantMessage]);
 
       // Notify parent to refresh session
-      onSessionUpdate?.();
+      if (onSessionUpdate) {
+        onSessionUpdate();
+      }
     } catch (error) {
+      console.error("Error sending message:", error);
+      console.error("Error details:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      // Remove the user message if there was an error
+      setMessages((prev) => prev.slice(0, -1));
+      
       showToast({
         type: "error",
         message:
           error.response?.data?.detail ||
+          error.message ||
           "Failed to get response. Please try again.",
       });
     } finally {
@@ -102,7 +137,7 @@ export function ChatInterface({ session, onSessionUpdate, selectedDocuments = []
             </p>
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
+          <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4">
               <svg
                 className="w-8 h-8 text-orange-600"
@@ -121,10 +156,37 @@ export function ChatInterface({ session, onSessionUpdate, selectedDocuments = []
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
               Start a conversation
             </h3>
-            <p className="text-gray-600 max-w-md">
+            <p className="text-gray-600 max-w-md mb-4">
               Ask questions about your documents and get intelligent,
               context-aware answers.
             </p>
+            
+            {/* Document selection reminder */}
+            {(!selectedDocuments || selectedDocuments.length === 0) && (
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg max-w-md">
+                <div className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="text-left">
+                    <p className="text-sm font-medium text-blue-900 mb-1">
+                      Select documents to get started
+                    </p>
+                    <p className="text-xs text-blue-700">
+                      Open the sidebar and select one or more documents to chat with. Your questions will only search through the selected documents.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {selectedDocuments && selectedDocuments.length > 0 && (
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-800">
+                  <span className="font-medium">{selectedDocuments.length}</span> document{selectedDocuments.length > 1 ? 's' : ''} selected
+                </p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="max-w-3xl mx-auto space-y-4">

@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status, UploadFile
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 from schema.rag_schema import DocumentPayload, QueryRequest, QueryResponse, SourceDocument
 from service.rag_modules_service import rag_modules_service
@@ -56,7 +56,7 @@ class RAGController:
         return {"message": f"Document '{document.title or 'Untitled'}' indexed successfully."}
 
     async def orchestrate_rag_flow(
-        self, query_request: QueryRequest, user: Dict[str, Any], session_id: Optional[str] = None, documents: Optional[list[str]] = None
+        self, query_request: QueryRequest, user: Dict[str, Any], session_id: Optional[str] = None, documents: Optional[List[str]] = None
     ) -> QueryResponse:
         """
         Orchestrates the full Modular RAG pipeline from query to generation.
@@ -65,7 +65,11 @@ class RAGController:
         query = query_request.query
         top_k = query_request.top_k
         username = user.get('username')
-        logger.info(f"User '{username}' submitted query: '{query}' with document filter: {documents}")
+        logger.info(f"User '{username}' submitted query: '{query}'")
+        logger.info(f"Document filter: {documents} (type: {type(documents)})")
+        
+        if documents:
+            logger.info(f"Filtering to {len(documents)} documents: {documents}")
 
         try:
             # 1. [Pre-Retrieval Module] Enhance the query (e.g., with HyDE)

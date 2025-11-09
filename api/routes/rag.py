@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
-from typing import Dict, Any
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
+from typing import Dict, Any, List, Optional
 from schema.rag_schema import DocumentPayload, QueryRequest, QueryResponse
 from controller.rag_controller import rag_controller
 from service.auth_service import get_current_user
@@ -53,8 +53,8 @@ async def index_document(
 )
 async def query_documents(
     query_request: QueryRequest,
-    session_id: str = None,
-    documents: list[str] = None,
+    session_id: Optional[str] = None,
+    documents: Optional[List[str]] = Query(None),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
