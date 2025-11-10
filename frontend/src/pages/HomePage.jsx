@@ -1,11 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/layout/Header';
+import { useAuth } from '../hooks/useAuth';
 import { ROUTES } from '../utils/constants';
 
 export function HomePage() {
   const [email, setEmail] = useState('');
   const navigate = useNavigate();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      navigate(ROUTES.CHAT, { replace: true });
+    }
+  }, [isAuthenticated, isLoading, navigate]);
 
   const handleGetStarted = (e) => {
     e.preventDefault();
